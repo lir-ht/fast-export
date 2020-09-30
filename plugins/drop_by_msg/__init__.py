@@ -1,3 +1,15 @@
+# TODO:
+#
+# * Testa att droppa flera commits i rad.
+#   Måste parents skrivas om rekursivt?
+#
+# * Kombinera plugins - acceptera antingen exakt 40 hextecken eller ett regex.
+#
+# * Skriv tester?
+#
+# * Flytta samtliga borttagna commits till en ny branch?
+#   Använd id(Filter) i namnet för unikhet?
+
 import sys, re
 
 
