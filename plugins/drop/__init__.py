@@ -2,8 +2,8 @@ import sys, re
 
 
 def build_filter(args):
-    if re.fullmatch(r"([A-Fa-f0-9]{40}(,|$))+", args):
-        return RevisionIdFilter(args.split(","))
+    if re.fullmatch(r'([A-Fa-f0-9]{40}(,|$))+', args):
+        return RevisionIdFilter(args.split(','))
     else:
         return DescriptionFilter(args)
 
