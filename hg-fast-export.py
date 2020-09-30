@@ -284,14 +284,8 @@ def strip_leading_slash(filename):
     return filename[1:]
   return filename
 
-remapped_parents = {}
-
-def log(*args):
-  print(*args, file=sys.stderr)
-  sys.stderr.flush()
-
 def export_commit(ui,repo,revision,old_marks,max,count,authors,
-                  branchesmap,drop,sob,brmap,hgtags,encoding='',fn_encoding='',
+                  branchesmap,sob,brmap,hgtags,encoding='',fn_encoding='',
                   plugins={}):
   def get_branchname(name):
     if name in brmap:
@@ -309,13 +303,6 @@ def export_commit(ui,repo,revision,old_marks,max,count,authors,
   parents = [p for p in repo.changelog.parentrevs(revision) if p >= 0]
   author = get_author(desc,user,authors)
   hg_hash=revsymbol(repo,b"%d" % revision).hex()
-
-  if revision in drop:
-    log("Dropping changeset %i:" % revision, hg_hash)
-    remapped_parents[revision] = parents
-    return count
-
-  parents = [rp for p in parents for rp in remapped_parents.get(p, [p])]
 
   if plugins and plugins['commit_message_filters']:
     commit_data = {'branch': branch, 'parents': parents,
@@ -530,7 +517,7 @@ def verify_heads(ui,repo,cache,force,ignore_unnamed_heads,branchesmap):
   return True
 
 def hg2git(repourl,m,marksfile,mappingfile,headsfile,tipfile,
-           authors={},branchesmap={},tagsmap={},drop=set(),
+           authors={},branchesmap={},tagsmap={},
            sob=False,force=False,ignore_unnamed_heads=False,hgtags=False,notes=False,encoding='',fn_encoding='',
            plugins={}):
   def check_cache(filename, contents):
@@ -586,13 +573,11 @@ def hg2git(repourl,m,marksfile,mappingfile,headsfile,tipfile,
   c=0
   brmap={}
   for rev in range(min,max):
-    c=export_commit(ui,repo,rev,old_marks,max,c,authors,branchesmap,drop,
+    c=export_commit(ui,repo,rev,old_marks,max,c,authors,branchesmap,
                     sob,brmap,hgtags,encoding,fn_encoding,
                     plugins)
   if notes:
     for rev in range(min,max):
-      if rev in remapped_parents:
-        continue
       c=export_note(ui,repo,rev,c,authors, encoding, rev == min and min != 0)
 
   state_cache['tip']=max
@@ -663,8 +648,6 @@ if __name__=='__main__':
       help="Add a plugin with the given init string <name=init>")
   parser.add_option("--subrepo-map", type="string", dest="subrepo_map",
       help="Provide a mapping file between the subrepository name and the submodule name")
-  parser.add_option("--drop", action="append", type="int", dest="drop",
-      help="Exclude specified hg revisions")
 
   (options,args)=parser.parse_args()
 
@@ -740,7 +723,6 @@ if __name__=='__main__':
   sys.exit(hg2git(options.repourl,m,options.marksfile,options.mappingfile,
                   options.headsfile, options.statusfile,
                   authors=a,branchesmap=b,tagsmap=t,
-                  drop=set(options.drop or []),
                   sob=options.sob,force=options.force,
                   ignore_unnamed_heads=options.ignore_unnamed_heads,
                   hgtags=options.hgtags,
