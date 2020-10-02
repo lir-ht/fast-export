@@ -15,13 +15,10 @@ def log(fmt, *args):
 
 # TODO:
 #
-# * Testa att droppa flera commits i rad.
-#   Måste parents skrivas om rekursivt?
-#
-# * Skriv tester?
+# * Testa att droppa merge-commits (och commits kring dem).
 #
 # * Flytta samtliga borttagna commits till en ny branch?
-#   Använd id(Filter) i namnet för unikhet?
+#   Använd id(Filter) i namnet för unikhet? Eller första commit-id?
 
 
 class FilterBase:

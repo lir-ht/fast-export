@@ -5,13 +5,55 @@ from pathlib import Path
 
 
 class CommitDropTest(TestCase):
-    def test_drop_single_commit(self):
-        commit1_hash = self.create_commit('commit 1')
+    def test_drop_single_commit_by_hash(self):
+        hash1 = self.create_commit('commit 1')
         self.create_commit('commit 2')
 
-        self.export.run_with_drop(commit1_hash)
+        self.drop(hash1)
 
         self.assertEqual(['commit 2'], self.git.log())
+
+    def test_drop_commits_by_desc(self):
+        self.create_commit('commit 1 is good')
+        self.create_commit('commit 2 is bad')
+        self.create_commit('commit 3 is good')
+        self.create_commit('commit 4 is bad')
+
+        self.drop('.*bad')
+
+        expected = ['commit 1 is good', 'commit 3 is good']
+        self.assertEqual(expected, self.git.log())
+
+    def test_drop_sequential_commits(self):
+        self.create_commit('commit 1')
+        hash2 = self.create_commit('commit 2')
+        hash3 = self.create_commit('commit 3')
+        self.create_commit('commit 4')
+
+        self.drop(hash2, hash3)
+
+        expected = ['commit 1', 'commit 4']
+        self.assertEqual(expected, self.git.log())
+
+    def test_drop_nonsequential_commits(self):
+        self.create_commit('commit 1')
+        hash2 = self.create_commit('commit 2')
+        self.create_commit('commit 3')
+        hash4 = self.create_commit('commit 4')
+
+        self.drop(hash2, hash4)
+
+        expected = ['commit 1', 'commit 3']
+        self.assertEqual(expected, self.git.log())
+
+    def test_drop_head(self):
+        self.create_commit('first')
+        self.create_commit('middle')
+        hash_last = self.create_commit('last')
+
+        self.drop(hash_last)
+
+        self.assertEqual(['first', 'middle'], self.git.log())
 
     def setUp(self):
         self.tempdir = TemporaryDirectory()
@@ -35,6 +77,9 @@ class CommitDropTest(TestCase):
         path = self.hg.repodir / filename
         with path.open('w') as f:
             print(data, file=f)
+
+    def drop(self, *spec):
+        self.export.run_with_drop(*spec)
 
 
 class ExportDriver:
