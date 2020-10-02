@@ -1,4 +1,4 @@
-import sys, subprocess
+import sys, os, subprocess
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from pathlib import Path
@@ -87,7 +87,8 @@ class ExportDriver:
         self.sourcedir = Path(sourcedir)
         self.targetdir = Path(targetdir)
         self.quiet = quiet
-        self.python_executable = sys.executable
+        self.python_executable = str(
+            Path.cwd() / os.environ.get("PYTHON", sys.executable))
         self.script = Path(__file__).parent / '../hg-fast-export.sh'
 
     def run_with_drop(self, *plugin_args):

@@ -1,8 +1,10 @@
+from __future__ import print_function
+
 import sys, re
 
 
 def build_filter(args):
-    if re.fullmatch(r'([A-Fa-f0-9]{40}(,|$))+', args):
+    if re.match(r'([A-Fa-f0-9]{40}(,|$))+$', args):
         return RevisionIdFilter(args.split(','))
     else:
         return DescriptionFilter(args)
@@ -18,10 +20,10 @@ def log(fmt, *args):
 # * Testa att droppa merge-commits (och commits kring dem).
 #
 # * Flytta samtliga borttagna commits till en ny branch?
-#   Använd id(Filter) i namnet för unikhet? Eller första commit-id?
+#   Use id(Filter) i namnet for unikhet? Eller first commit-id?
 
 
-class FilterBase:
+class FilterBase(object):
     def __init__(self):
         self.remapped_parents = {}
 
@@ -50,7 +52,7 @@ class FilterBase:
 
 class RevisionIdFilter(FilterBase):
     def __init__(self, revision_hash_list):
-        super().__init__()
+        super(RevisionIdFilter, self).__init__()
         self.unresolved_hashes = {h.encode('ascii', 'strict')
                                   for h in revision_hash_list}
 
@@ -60,7 +62,7 @@ class RevisionIdFilter(FilterBase):
 
 class DescriptionFilter(FilterBase):
     def __init__(self, pattern):
-        super().__init__()
+        super(DescriptionFilter, self).__init__()
         self.pattern = re.compile(pattern.encode('ascii', 'strict'))
 
     def should_drop_commit(self, commit_data):
