@@ -15,14 +15,6 @@ def log(fmt, *args):
     sys.stderr.flush()
 
 
-# TODO:
-#
-# * Testa att droppa merge-commits (och commits kring dem).
-#
-# * Flytta samtliga borttagna commits till en ny branch?
-#   Use id(Filter) i namnet for unikhet? Eller first commit-id?
-
-
 class FilterBase(object):
     def __init__(self):
         self.remapped_parents = {}

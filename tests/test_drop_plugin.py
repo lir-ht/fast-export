@@ -55,6 +55,21 @@ class CommitDropTest(TestCase):
 
         self.assertEqual(['first', 'middle'], self.git.log())
 
+    def test_drop_merge_commit(self):
+        initial_hash = self.create_commit('initial')
+        self.create_commit('branch A')
+        self.hg.checkout(initial_hash)
+        self.create_commit('branch B')
+        self.hg.merge()
+        merge_hash = self.create_commit('merge to drop')
+        self.create_commit('last')
+
+        self.drop(merge_hash)
+
+        expected_commits = ['initial', 'branch A', 'branch B', 'last']
+        self.assertEqual(expected_commits, self.git.log())
+        self.assertEqual(['branch B', 'branch A'], self.git_parents('last'))
+
     def setUp(self):
         self.tempdir = TemporaryDirectory()
 
@@ -81,6 +96,13 @@ class CommitDropTest(TestCase):
     def drop(self, *spec):
         self.export.run_with_drop(*spec)
 
+    def git_parents(self, message):
+        matches = self.git.grep_log(message)
+        if len(matches) != 1:
+            raise Exception('No unique commit with message %r.' % message)
+        subject, parents = self.git.details(matches[0])
+        return [self.git.details(p)[0] for p in parents]
+
 
 class ExportDriver:
     def __init__(self, sourcedir, targetdir, *, quiet=True):
@@ -88,7 +110,7 @@ class ExportDriver:
         self.targetdir = Path(targetdir)
         self.quiet = quiet
         self.python_executable = str(
-            Path.cwd() / os.environ.get("PYTHON", sys.executable))
+            Path.cwd() / os.environ.get('PYTHON', sys.executable))
         self.script = Path(__file__).parent / '../hg-fast-export.sh'
 
     def run_with_drop(self, *plugin_args):
@@ -115,9 +137,15 @@ class HgDriver:
 
     def log(self):
         output = self.run_command('log', '-T', '{desc}\n')
-        commits = output.strip().split('\n')
+        commits = output.strip().splitlines()
         commits.reverse()
         return commits
+
+    def checkout(self, rev):
+        self.run_command('checkout', '-r', rev)
+
+    def merge(self):
+        self.run_command('merge', '--tool', ':local')
 
     def run_command(self, *args):
         p = subprocess.run(('hg', '-yq') + args,
@@ -138,7 +166,19 @@ class GitDriver:
 
     def log(self):
         output = self.run_command('log', '--format=%s', '--reverse')
-        return output.strip().split('\n')
+        return output.strip().splitlines()
+
+    def grep_log(self, pattern):
+        output = self.run_command('log', '--format=%H',
+                                  '-F', '--grep', pattern)
+        return output.strip().splitlines()
+
+    def details(self, commit_hash):
+        fmt = '%s%n%P'
+        output = self.run_command('show', '-s', '--format=' + fmt,
+                                  commit_hash)
+        subject, parents = output.splitlines()
+        return subject, parents.split()
 
     def run_command(self, *args):
         p = subprocess.run(('git', '--no-pager') + args,
