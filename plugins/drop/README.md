@@ -5,7 +5,8 @@ The flag can be given multiple times to drop more than one commit.
 
 The <spec> value can be either
 
- - a hg hash in the full form (40 hexadecimal characters) to drop a
-   the corresponding changeset, or
+ - a comma-separated list of hg hashes in the full form (40
+   hexadecimal characters) to drop the corresponding changesets, or
 
- - a regular expression pattern to drop all matching changesets.
+ - a regular expression pattern to drop all changesets with matching
+   descriptions.
