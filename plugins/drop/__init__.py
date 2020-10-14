@@ -21,7 +21,12 @@ class FilterBase(object):
 
     def commit_message_filter(self, commit_data):
         rev = commit_data['revision']
-        parent_revs = commit_data['parents']
+
+        mapping = self.remapped_parents
+        parent_revs = [rp for p in commit_data['parents']
+                       for rp in mapping.get(p, [p])]
+
+        commit_data['parents'] = parent_revs
 
         if self.should_drop_commit(commit_data):
             log('Dropping revision %i.', rev)
@@ -32,11 +37,6 @@ class FilterBase(object):
             # children, so detach them to a separate branch.
             commit_data['branch'] = b'dropped-hg-head'
             commit_data['parents'] = []
-
-        mapping = self.remapped_parents
-        if any(p in mapping for p in parent_revs):
-            commit_data['parents'] = [rp for p in parent_revs
-                                      for rp in mapping.get(p, [p])]
 
     def should_drop_commit(self, commit_data):
         return False

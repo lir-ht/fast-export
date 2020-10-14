@@ -24,15 +24,28 @@ class CommitDropTest(TestCase):
         expected = ['commit 1 is good', 'commit 3 is good']
         self.assertEqual(expected, self.git.log())
 
-    def test_drop_sequential_commits(self):
+    def test_drop_sequential_commits_in_single_plugin_instance(self):
         self.create_commit('commit 1')
         hash2 = self.create_commit('commit 2')
         hash3 = self.create_commit('commit 3')
-        self.create_commit('commit 4')
+        hash4 = self.create_commit('commit 4')
+        self.create_commit('commit 5')
 
-        self.drop(hash2, hash3)
+        self.drop(','.join((hash2, hash3, hash4)))
 
-        expected = ['commit 1', 'commit 4']
+        expected = ['commit 1', 'commit 5']
+        self.assertEqual(expected, self.git.log())
+
+    def test_drop_sequential_commits_in_multiple_plugin_instances(self):
+        self.create_commit('commit 1')
+        hash2 = self.create_commit('commit 2')
+        hash3 = self.create_commit('commit 3')
+        hash4 = self.create_commit('commit 4')
+        self.create_commit('commit 5')
+
+        self.drop(hash2, hash3, hash4)
+
+        expected = ['commit 1', 'commit 5']
         self.assertEqual(expected, self.git.log())
 
     def test_drop_nonsequential_commits(self):
@@ -41,7 +54,7 @@ class CommitDropTest(TestCase):
         self.create_commit('commit 3')
         hash4 = self.create_commit('commit 4')
 
-        self.drop(hash2, hash4)
+        self.drop(','.join((hash2, hash4)))
 
         expected = ['commit 1', 'commit 3']
         self.assertEqual(expected, self.git.log())
@@ -69,6 +82,27 @@ class CommitDropTest(TestCase):
         expected_commits = ['initial', 'branch A', 'branch B', 'last']
         self.assertEqual(expected_commits, self.git.log())
         self.assertEqual(['branch B', 'branch A'], self.git_parents('last'))
+
+    def test_drop_different_commits_in_multiple_plugin_instances(self):
+        self.create_commit('good commit')
+        bad_hash = self.create_commit('bad commit')
+        self.create_commit('awful commit')
+        self.create_commit('another good commit')
+
+        self.drop('^awful.*', bad_hash)
+
+        expected = ['good commit', 'another good commit']
+        self.assertEqual(expected, self.git.log())
+
+    def test_drop_same_commit_in_multiple_plugin_instances(self):
+        self.create_commit('good commit')
+        bad_hash = self.create_commit('bad commit')
+        self.create_commit('another good commit')
+
+        self.drop('^bad.*', bad_hash)
+
+        expected = ['good commit', 'another good commit']
+        self.assertEqual(expected, self.git.log())
 
     def setUp(self):
         self.tempdir = TemporaryDirectory()
